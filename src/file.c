@@ -22,6 +22,8 @@
 #include <string.h>
 #include "l3afpad.h"
 
+static char_u *check_for_cryptkey(char_u *cryptkey, char_u *ptr, long *sizep, off_T *filesizep, int newfile, char_u *fname, int *did_ask);
+
 gboolean check_file_writable(gchar *filename)
 {
 	FILE *fp;

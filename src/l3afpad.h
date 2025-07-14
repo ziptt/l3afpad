@@ -79,8 +79,4 @@ extern PublicData *pub;
 
 void save_config_file(void);
 
-typedef unsigned char	char_u;
-typedef unsigned short	short_u;
-typedef unsigned int	int_u;
-
 #endif /* _L3AFPAD_H */

@@ -1,18 +1,7 @@
-/* vi:set ts=8 sts=4 sw=4 noet:
- *
- * VIM - Vi IMproved	by Bram Moolenaar
- *
- * Do ":help uganda"  in Vim to read copying and usage conditions.
- * Do ":help credits" in Vim to see a list of people who contributed.
- * See README.txt for an overview of the Vim source code.
- */
-
 /*
- * crypt.c: Generic encryption support.
+ * crypt.c: Generic encryption support. (from Vim)
  */
-#include "vim.h"
 
-#if defined(FEAT_CRYPT) || defined(PROTO)
 /*
  * Optional encryption support.
  * Mohsin Ahmed, mosh@sasi.com, 1998-09-24
@@ -36,30 +25,27 @@ typedef struct {
     int		seed_len;	// length of seed, or 0 when not using seed
     int		add_len;	// additional length in the header needed for storing
 				// custom data
-#ifdef CRYPT_NOT_INPLACE
-    int		works_inplace;	// encryption/decryption can be done in-place
-#endif
     int		whole_undofile;	// whole undo file is encrypted
 
     // Optional function pointer for a self-test.
     int (*self_test_fn)(void);
 
     // Function pointer for initializing encryption/decryption.
-    int (* init_fn)(cryptstate_T *state, char_u *key, crypt_arg_T *arg);
+    int (* init_fn)(cryptstate_T *state, char *key, crypt_arg_T *arg);
 
     // Function pointers for encoding/decoding from one buffer into another.
     // Optional, however, these or the _buffer ones should be configured.
-    void (*encode_fn)(cryptstate_T *state, char_u *from, size_t len,
-							char_u *to, int last);
-    void (*decode_fn)(cryptstate_T *state, char_u *from, size_t len,
-							char_u *to, int last);
+    void (*encode_fn)(cryptstate_T *state, char *from, size_t len,
+							char *to, int last);
+    void (*decode_fn)(cryptstate_T *state, char *from, size_t len,
+							char *to, int last);
 
     // Function pointers for encoding and decoding, can buffer data if needed.
     // Optional (however, these or the above should be configured).
-    long (*encode_buffer_fn)(cryptstate_T *state, char_u *from, size_t len,
-						    char_u **newptr, int last);
-    long (*decode_buffer_fn)(cryptstate_T *state, char_u *from, size_t len,
-						    char_u **newptr, int last);
+    long (*encode_buffer_fn)(cryptstate_T *state, char *from, size_t len,
+						    char **newptr, int last);
+    long (*decode_buffer_fn)(cryptstate_T *state, char *from, size_t len,
+						    char **newptr, int last);
 
     // Function pointers for in-place encoding and decoding, used for
     // crypt_*_inplace(). "from" and "to" arguments will be equal.
@@ -68,20 +54,20 @@ typedef struct {
     // the crypt_(en|de)code() interface (for example because it wishes to add
     // padding to files).
     // This method is used for swap and undo files which have a rigid format.
-    void (*encode_inplace_fn)(cryptstate_T *state, char_u *p1, size_t len,
-							char_u *p2, int last);
-    void (*decode_inplace_fn)(cryptstate_T *state, char_u *p1, size_t len,
-							char_u *p2, int last);
+    void (*encode_inplace_fn)(cryptstate_T *state, char *p1, size_t len,
+							char *p2, int last);
+    void (*decode_inplace_fn)(cryptstate_T *state, char *p1, size_t len,
+							char *p2, int last);
 } cryptmethod_T;
 
-static int crypt_sodium_init_(cryptstate_T *state, char_u *key, crypt_arg_T *arg);
-static long crypt_sodium_buffer_decode(cryptstate_T *state, char_u *from, size_t len, char_u **buf_out, int last);
-static long crypt_sodium_buffer_encode(cryptstate_T *state, char_u *from, size_t len, char_u **buf_out, int last);
+static int crypt_sodium_init_(cryptstate_T *state, char *key, crypt_arg_T *arg);
+static long crypt_sodium_buffer_decode(cryptstate_T *state, char *from, size_t len, char **buf_out, int last);
+static long crypt_sodium_buffer_encode(cryptstate_T *state, char *from, size_t len, char **buf_out, int last);
 # if defined(FEAT_SODIUM) || defined(PROTO)
-static void crypt_long_long_to_char(long long n, char_u *s);
-static void crypt_int_to_char(int n, char_u *s);
-static long long crypt_char_to_long_long(char_u *s);
-static int crypt_char_to_int(char_u *s);
+static void crypt_long_long_to_char(long long n, char *s);
+static void crypt_int_to_char(int n, char *s);
+static long long crypt_char_to_long_long(char *s);
+static int crypt_char_to_int(char *s);
 #endif
 #if defined(FEAT_EVAL) && defined(FEAT_SODIUM)
 static void crypt_sodium_report_hash_params(unsigned long long opslimit, unsigned long long ops_def, size_t memlimit, size_t mem_def, int alg, int alg_def);
@@ -351,7 +337,7 @@ static char	crypt_magic_head[] = "VimCrypt~";
  * 2 for "blowfish2".
  */
     int
-crypt_method_nr_from_name(char_u *name)
+crypt_method_nr_from_name(char *name)
 {
     int i;
 
@@ -466,7 +452,7 @@ crypt_get_max_header_len(void)
 crypt_set_cm_option(buf_T *buf, int method_nr)
 {
     free_string_option(buf->b_p_cm);
-    buf->b_p_cm = vim_strsave((char_u *)cryptmethods[method_nr].name);
+    buf->b_p_cm = vim_strsave((char *)cryptmethods[method_nr].name);
 }
 
 /*
@@ -490,7 +476,7 @@ crypt_self_test(void)
     cryptstate_T *
 crypt_create(
     int		method_nr,
-    char_u	*key,
+    char	*key,
     crypt_arg_T *crypt_arg)
 {
     cryptstate_T *state = ALLOC_ONE(cryptstate_T);
@@ -515,8 +501,8 @@ crypt_create(
     cryptstate_T *
 crypt_create_from_header(
     int		method_nr,
-    char_u	*key,
-    char_u	*header)
+    char	*key,
+    char	*header)
 {
     crypt_arg_T arg;
 
@@ -542,12 +528,12 @@ crypt_create_from_header(
  * Return an allocated cryptstate_T or NULL on error.
  */
     cryptstate_T *
-crypt_create_from_file(FILE *fp, char_u *key)
+crypt_create_from_file(FILE *fp, char *key)
 {
     int		method_nr;
     int		header_len;
     char	magic_buffer[CRYPT_MAGIC_LEN];
-    char_u	*buffer;
+    char	*buffer;
     cryptstate_T *state;
 
     if (fread(magic_buffer, CRYPT_MAGIC_LEN, 1, fp) != 1)
@@ -583,8 +569,8 @@ crypt_create_from_file(FILE *fp, char_u *key)
     cryptstate_T *
 crypt_create_for_writing(
     int	    method_nr,
-    char_u  *key,
-    char_u  **header,
+    char  *key,
+    char  **header,
     int	    *header_len)
 {
     int	    len = crypt_get_header_len(method_nr);
@@ -663,9 +649,9 @@ crypt_free_state(cryptstate_T *state)
     long
 crypt_encode_alloc(
     cryptstate_T *state,
-    char_u	*from,
+    char	*from,
     size_t	len,
-    char_u	**newptr,
+    char	**newptr,
     int		last)
 {
     cryptmethod_T *method = &cryptmethods[state->method_nr];
@@ -692,9 +678,9 @@ crypt_encode_alloc(
     long
 crypt_decode_alloc(
     cryptstate_T *state,
-    char_u	*ptr,
+    char	*ptr,
     long	len,
-    char_u      **newptr,
+    char      **newptr,
     int		last)
 {
     cryptmethod_T *method = &cryptmethods[state->method_nr];
@@ -721,9 +707,9 @@ crypt_decode_alloc(
     void
 crypt_encode(
     cryptstate_T *state,
-    char_u	*from,
+    char	*from,
     size_t	len,
-    char_u	*to,
+    char	*to,
     int		last)
 {
     cryptmethods[state->method_nr].encode_fn(state, from, len, to, last);
@@ -736,9 +722,9 @@ crypt_encode(
     void
 crypt_decode(
     cryptstate_T *state,
-    char_u	*from,
+    char	*from,
     size_t	len,
-    char_u	*to,
+    char	*to,
     int		last)
 {
     cryptmethods[state->method_nr].decode_fn(state, from, len, to, last);
@@ -751,7 +737,7 @@ crypt_decode(
     void
 crypt_encode_inplace(
     cryptstate_T *state,
-    char_u	*buf,
+    char	*buf,
     size_t	len,
     int		last)
 {
@@ -765,7 +751,7 @@ crypt_encode_inplace(
     void
 crypt_decode_inplace(
     cryptstate_T *state,
-    char_u	*buf,
+    char	*buf,
     size_t	len,
     int		last)
 {
@@ -778,9 +764,9 @@ crypt_decode_inplace(
  * in memory anywhere.
  */
     void
-crypt_free_key(char_u *key)
+crypt_free_key(char *key)
 {
-    char_u *p;
+    char *p;
 
     if (key != NULL)
     {
@@ -817,7 +803,7 @@ crypt_check_swapfile_curbuf(void)
 	// encryption uses padding and MAC, that does not work very well with
 	// swap and undo files, so disable them
 	mf_close_file(curbuf, TRUE);	// remove the swap file
-	set_option_value_give_err((char_u *)"swf", 0, NULL, OPT_LOCAL);
+	set_option_value_give_err((char *)"swf", 0, NULL, OPT_LOCAL);
 	msg_scroll = TRUE;
 	msg(_("Note: Encryption of swapfile not supported, disabling swap file"));
     }
@@ -837,12 +823,12 @@ crypt_check_current_method(void)
  * When "store" is FALSE, the typed key is returned in allocated memory.
  * Returns NULL on failure.
  */
-    char_u *
+    char *
 crypt_get_key(
     int		store,
     int		twice)	    // Ask for the key twice.
 {
-    char_u	*p1, *p2 = NULL;
+    char	*p1, *p2 = NULL;
     int		round;
 
     for (round = 0; ; ++round)
@@ -850,8 +836,8 @@ crypt_get_key(
 	cmdline_star = TRUE;
 	cmdline_row = msg_row;
 	p1 = getcmdline_prompt(NUL, round == 0
-		? (char_u *)_("Enter encryption key: ")
-		: (char_u *)_("Enter same key again: "), 0, EXPAND_NOTHING,
+		? (char *)_("Enter encryption key: ")
+		: (char *)_("Enter same key again: "), 0, EXPAND_NOTHING,
 		NULL);
 	cmdline_star = FALSE;
 
@@ -872,7 +858,7 @@ crypt_get_key(
 
 	    if (store)
 	    {
-		set_option_value_give_err((char_u *)"key", 0L, p1, OPT_LOCAL);
+		set_option_value_give_err((char *)"key", 0L, p1, OPT_LOCAL);
 		crypt_free_key(p1);
 		p1 = curbuf->b_p_key;
 		crypt_check_swapfile_curbuf();
@@ -916,7 +902,7 @@ crypt_append_msg(
     static int
 crypt_sodium_init_(
     cryptstate_T	*state UNUSED,
-    char_u		*key UNUSED,
+    char		*key UNUSED,
     crypt_arg_T		*arg UNUSED)
 {
 # ifdef FEAT_SODIUM
@@ -972,8 +958,8 @@ crypt_sodium_init_(
 	// "cat_add" should not be NULL, check anyway for safety
 	if (state->method_nr == CRYPT_M_SOD2 && arg->cat_add != NULL)
 	{
-	    char_u	buffer[20];
-	    char_u	*p = buffer;
+	    char	buffer[20];
+	    char	*p = buffer;
 	    vim_memset(buffer, 0, 20);
 
 	    crypt_long_long_to_char(opslimit, p);
@@ -988,8 +974,8 @@ crypt_sodium_init_(
     }
     else
     {
-	char_u	buffer[20];
-	char_u	*p = buffer;
+	char	buffer[20];
+	char	*p = buffer;
 	vim_memset(buffer, 0, 20);
 	int	size = sizeof(opslimit) +
 	    sizeof(memlimit) + sizeof(alg);
@@ -1057,9 +1043,9 @@ crypt_sodium_init_(
     void
 crypt_sodium_encode(
     cryptstate_T *state UNUSED,
-    char_u	*from UNUSED,
+    char	*from UNUSED,
     size_t	len UNUSED,
-    char_u	*to UNUSED,
+    char	*to UNUSED,
     int		last UNUSED)
 {
 # ifdef FEAT_SODIUM
@@ -1102,9 +1088,9 @@ crypt_sodium_encode(
     void
 crypt_sodium_decode(
     cryptstate_T *state UNUSED,
-    char_u	*from UNUSED,
+    char	*from UNUSED,
     size_t	len UNUSED,
-    char_u	*to UNUSED,
+    char	*to UNUSED,
     int		last UNUSED)
 {
 # ifdef FEAT_SODIUM
@@ -1112,9 +1098,9 @@ crypt_sodium_decode(
     sodium_state_T *sod_st = state->method_state;
     unsigned char  tag;
     unsigned long long buf_len;
-    char_u *p1 = from;
-    char_u *p2 = to;
-    char_u *buf_out;
+    char *p1 = from;
+    char *p2 = to;
+    char *buf_out;
 
     if (sod_st->count == 0
 		   && len <= crypto_secretstream_xchacha20poly1305_HEADERBYTES)
@@ -1123,7 +1109,7 @@ crypt_sodium_decode(
 	return;
     }
 
-    buf_out = (char_u *)alloc(len);
+    buf_out = (char *)alloc(len);
 
     if (buf_out == NULL)
     {
@@ -1180,15 +1166,15 @@ fail:
     static long
 crypt_sodium_buffer_encode(
     cryptstate_T *state UNUSED,
-    char_u	*from UNUSED,
+    char	*from UNUSED,
     size_t	len UNUSED,
-    char_u	**buf_out UNUSED,
+    char	**buf_out UNUSED,
     int		last UNUSED)
 {
 # ifdef FEAT_SODIUM
     // crypto_box_SEEDBYTES ==  crypto_secretstream_xchacha20poly1305_KEYBYTES
     unsigned long long	out_len;
-    char_u		*ptr;
+    char		*ptr;
     unsigned char	tag = last
 			? crypto_secretstream_xchacha20poly1305_TAG_FINAL  : 0;
     int			length;
@@ -1230,9 +1216,9 @@ crypt_sodium_buffer_encode(
     static long
 crypt_sodium_buffer_decode(
     cryptstate_T *state UNUSED,
-    char_u	*from UNUSED,
+    char	*from UNUSED,
     size_t	len UNUSED,
-    char_u	**buf_out UNUSED,
+    char	**buf_out UNUSED,
     int		last UNUSED)
 {
 # ifdef FEAT_SODIUM
@@ -1284,7 +1270,7 @@ crypt_sodium_buffer_decode(
 
 # if defined(FEAT_SODIUM) || defined(PROTO)
     void
-crypt_sodium_lock_key(char_u *key)
+crypt_sodium_lock_key(char *key)
 {
     if (sodium_init() >= 0)
 	sodium_mlock(key, STRLEN(key));
@@ -1345,29 +1331,29 @@ crypt_sodium_report_hash_params(
 #endif
 
     static void
-crypt_long_long_to_char(long long n, char_u *s)
+crypt_long_long_to_char(long long n, char *s)
 {
     int i;
     for (i = 0; i < 8; i++)
     {
-	s[i] = (char_u)(n & 0xff);
+	s[i] = (char)(n & 0xff);
 	n = (unsigned)n >> 8;
     }
 }
 
     static void
-crypt_int_to_char(int n, char_u *s)
+crypt_int_to_char(int n, char *s)
 {
     int i;
     for (i = 0; i < 4; i++)
     {
-	s[i] = (char_u)(n & 0xff);
+	s[i] = (char)(n & 0xff);
 	n = (unsigned)n >> 8;
     }
 }
 
     static long long
-crypt_char_to_long_long(char_u *s)
+crypt_char_to_long_long(char *s)
 {
     unsigned long long    retval = 0;
     int i;
@@ -1384,7 +1370,7 @@ crypt_char_to_long_long(char_u *s)
 }
 
     static int
-crypt_char_to_int(char_u *s)
+crypt_char_to_int(char *s)
 {
     int retval = 0;
     int i;
@@ -1401,5 +1387,3 @@ crypt_char_to_int(char_u *s)
     return retval;
 }
 # endif
-
-#endif // FEAT_CRYPT

@@ -22,6 +22,8 @@
 #include <string.h>
 #include "l3afpad.h"
 
+Test1
+
 gboolean check_file_writable(gchar *filename)
 {
 	FILE *fp;

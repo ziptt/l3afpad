@@ -20,6 +20,7 @@
 #define _L3AFPAD_MAIN
 #include "l3afpad.h"
 #include <glib/gstdio.h>
+#include <sodium.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -195,6 +196,8 @@ gint main(gint argc, gchar **argv)
 {
 	Conf *conf;
 	gchar *stdin_data = NULL;
+
+	sodium_init()
 
 	bindtextdomain(PACKAGE, LOCALEDIR);
 	bind_textdomain_codeset(PACKAGE, "UTF-8");

@@ -18,9 +18,14 @@
  */
 
 #include <glib/gprintf.h>
+#include <sodium.h>
 #include <stdio.h>
 #include <string.h>
 #include "l3afpad.h"
+
+#define SALT_SIZE crypto_pwhash_SALTBYTES
+#define NONCE_SIZE crypto_secretbox_NONCEBYTES
+#define KEY_SIZE crypto_secretbox_KEYBYTES
 
 gboolean check_file_writable(gchar *filename)
 {
@@ -94,6 +99,44 @@ gchar *parse_file_uri(gchar *uri)
 	}
 */
 	return filename;
+}
+
+guchar encrypt_data(gchar *plaintext) {
+	guchar salt[SALT_SIZE];
+	guchar nonce[NONCE_SIZE];
+	guchar key[KEY_SIZE];
+
+	GError *err = NULL;
+
+	randombytes_buf(salt, sizeof salt);
+	randombytes_buf(nonce, sizeof nonce);
+
+	// temp
+	guchar password = "password";
+
+	if (crypto_pwhash (key, sizeof key, password, strlen(password), salt,
+		crypto_pwhash_OPSLIMIT_INTERACTIVE,
+		crypto_pwhash_MEMLIMIT_INTERACTIVE,
+		crypto_pwhash_ALG_DEFAULT) != 0) {
+		run_dialog_message(gtk_widget_get_toplevel(view),
+			GTK_MESSAGE_ERROR, err->message);
+		g_error_free(err);
+		return -1;
+	}
+
+	size_t plaintext_len = sizeof(plaintext);
+	guchar ciphertext[laintext_len + crypto_secretbox_MACBYTES];
+	if (crypto_secretbox_easy(ciphertext, plaintext, plaintext_len, nonce, key) != 0) {
+		run_dialog_message(gtk_widget_get_toplevel(view),
+			GTK_MESSAGE_ERROR, err->message);
+		g_error_free(err);
+		return -1;
+	}
+
+	sodium_memzero(password, strlen(password));
+	sodium_memzero(key, sizeof key);
+
+	return ciphertext;
 }
 
 gint file_open_real(GtkWidget *view, FileInfo *fi)
@@ -175,7 +218,7 @@ gint file_save_real(GtkWidget *view, FileInfo *fi)
 {
 	FILE *fp;
 	GtkTextIter start, end;
-	gchar *str, *cstr;
+	gchar *str, *cstr, *cstr_encrypted;
 	gsize rbytes, wbytes;
 	GError *err = NULL;
 
@@ -211,13 +254,15 @@ gint file_save_real(GtkWidget *view, FileInfo *fi)
 		return -1;
 	}
 
+	cstr_encrypted = encrypt_data(cstr);
+
 	fp = fopen(fi->filename, "w");
 	if (!fp) {
 		run_dialog_message(gtk_widget_get_toplevel(view),
 			GTK_MESSAGE_ERROR, _("Can't open file to write"));
 		return -1;
 	}
-	if (fwrite(cstr, 1, wbytes, fp) != wbytes) {
+	if (fwrite(cstr_encrypted, 1, wbytes, fp) != wbytes) {
 		run_dialog_message(gtk_widget_get_toplevel(view),
 			GTK_MESSAGE_ERROR, _("Can't write file"));
 		fclose(fp);
@@ -227,6 +272,7 @@ gint file_save_real(GtkWidget *view, FileInfo *fi)
 	gtk_text_buffer_set_modified(buffer, FALSE);
 	fclose(fp);
 	g_free(cstr);
+	g_free(cstr_encrypted);
 
 	return 0;
 }

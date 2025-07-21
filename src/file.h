@@ -30,6 +30,7 @@ typedef struct {
 gboolean check_file_writable(gchar *filename);
 gchar *get_file_basename(gchar *filename, gboolean bracket);
 gchar *parse_file_uri(gchar *uri);
+guchar encrypt_data(gchar *plaintext);
 gint file_open_real(GtkWidget *view, FileInfo *fi);
 gint file_save_real(GtkWidget *view, FileInfo *fi);
 gchar *file_stats(GtkWidget *view, FileInfo *fi);

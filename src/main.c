@@ -197,7 +197,7 @@ gint main(gint argc, gchar **argv)
 	Conf *conf;
 	gchar *stdin_data = NULL;
 
-	sodium_init()
+	sodium_init();
 
 	bindtextdomain(PACKAGE, LOCALEDIR);
 	bind_textdomain_codeset(PACKAGE, "UTF-8");

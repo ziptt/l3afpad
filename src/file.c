@@ -27,6 +27,11 @@
 #define NONCE_SIZE crypto_secretbox_NONCEBYTES
 #define KEY_SIZE crypto_secretbox_KEYBYTES
 
+void die(const char *msg) {
+    fprintf(stderr, "%s\n", msg);
+    exit(1);
+}
+
 gboolean check_file_writable(gchar *filename)
 {
 	FILE *fp;
@@ -114,23 +119,17 @@ guchar encrypt_data(gchar *plaintext) {
 	// temp
 	guchar password = "password";
 
-	if (crypto_pwhash (key, sizeof key, password, strlen(password), salt,
+	if (crypto_pwhash(key, sizeof key, password, strlen(password), salt,
 		crypto_pwhash_OPSLIMIT_INTERACTIVE,
 		crypto_pwhash_MEMLIMIT_INTERACTIVE,
 		crypto_pwhash_ALG_DEFAULT) != 0) {
-		run_dialog_message(gtk_widget_get_toplevel(view),
-			GTK_MESSAGE_ERROR, err->message);
-		g_error_free(err);
-		return -1;
+			die("Test Error");
 	}
 
 	size_t plaintext_len = sizeof(plaintext);
 	guchar ciphertext[plaintext_len + crypto_secretbox_MACBYTES];
 	if (crypto_secretbox_easy(ciphertext, plaintext, plaintext_len, nonce, key) != 0) {
-		run_dialog_message(gtk_widget_get_toplevel(view),
-			GTK_MESSAGE_ERROR, err->message);
-		g_error_free(err);
-		return -1;
+		die("Test Error");
 	}
 
 	sodium_memzero(password, strlen(password));

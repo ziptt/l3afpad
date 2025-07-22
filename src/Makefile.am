@@ -25,4 +25,4 @@ l3afpad_SOURCES = \
 	gtksourceiter.h gtksourceiter.c
 
 l3afpad_CFLAGS  = $(GTK_CFLAGS)
-l3afpad_LDADD   = $(GTK_LIBS) $(INTLLIBS)
+l3afpad_LDADD   = $(GTK_LIBS) $(INTLLIBS) -lsodium

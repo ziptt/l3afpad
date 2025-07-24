@@ -231,8 +231,6 @@ gint file_open_real(GtkWidget *view, FileInfo *fi)
 		die("Decryption failed: wrong password or corrupted file");
 	}
 
-	decrypted = decrypt_data(blabla);
-
 	fi->lineend = detect_line_ending(contents);
 	if (fi->lineend != LF)
 		convert_line_ending_to_lf(contents);

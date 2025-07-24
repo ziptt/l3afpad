@@ -143,12 +143,6 @@ guchar *encrypt_data(guchar *plaintext, size_t *out_len) {
 	return output;
 }
 
-guchar *decrypt_data(content) {
-	guchar salt[SALT_SIZE];
-	guchar nonce[NONCE_SIZE];
-
-}
-
 gint file_open_real(GtkWidget *view, FileInfo *fi)
 {
 	gchar *contents;

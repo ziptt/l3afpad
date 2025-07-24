@@ -143,6 +143,12 @@ guchar *encrypt_data(guchar *plaintext, size_t *out_len) {
 	return output;
 }
 
+guchar *decrypt_data(content) {
+	guchar salt[SALT_SIZE];
+	guchar nonce[NONCE_SIZE];
+
+}
+
 gint file_open_real(GtkWidget *view, FileInfo *fi)
 {
 	gchar *contents;
@@ -169,10 +175,8 @@ gint file_open_real(GtkWidget *view, FileInfo *fi)
 	guchar salt[SALT_SIZE];
 	guchar nonce[NONCE_SIZE];
 
-	gchar *r_content = contents;
-
-	memcpy(salt, r_content, SALT_SIZE);
-	memcpy(nonce, r_content + SALT_SIZE, NONCE_SIZE);
+	memcpy(salt, contents, SALT_SIZE);
+	memcpy(nonce, contents + SALT_SIZE, NONCE_SIZE);
 
 	// temp
 	gchar *password = "password";
@@ -185,7 +189,7 @@ gint file_open_real(GtkWidget *view, FileInfo *fi)
 		die("Password hashing failed");
 	}
 
-	guchar *ciphertext = (guchar *)r_content + SALT_SIZE + NONCE_SIZE;
+	guchar *ciphertext = (guchar *)contents + SALT_SIZE + NONCE_SIZE;
 	gsize ciphertext_len = length - SALT_SIZE - NONCE_SIZE;
 
 	guchar *decrypted = g_malloc(ciphertext_len - crypto_secretbox_MACBYTES);
@@ -193,6 +197,8 @@ gint file_open_real(GtkWidget *view, FileInfo *fi)
 	if (crypto_secretbox_open_easy(decrypted, ciphertext, ciphertext_len, nonce, key) != 0) {
 		die("Decryption failed: wrong password or corrupted file");
 	}
+
+	decrypted = decrypt_data(blabla);
 
 	fi->lineend = detect_line_ending(contents);
 	if (fi->lineend != LF)

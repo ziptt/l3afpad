@@ -28,8 +28,8 @@
 #define KEY_SIZE crypto_secretbox_KEYBYTES
 
 void die(const char *msg) {
-    fprintf(stderr, "%s\n", msg);
-    exit(1);
+	fprintf(stderr, "%s\n", msg);
+	exit(1);
 }
 
 gboolean check_file_writable(gchar *filename)
@@ -106,7 +106,7 @@ gchar *parse_file_uri(gchar *uri)
 	return filename;
 }
 
-guchar *encrypt_data(guchar *plaintext) {
+guchar *encrypt_data(guchar *plaintext, size_t *out_len) {
 	guchar salt[SALT_SIZE];
 	guchar nonce[NONCE_SIZE];
 	guchar key[KEY_SIZE];
@@ -126,16 +126,21 @@ guchar *encrypt_data(guchar *plaintext) {
 
 	size_t plaintext_len = strlen((char *)plaintext);
 	size_t ciphertext_len = plaintext_len + crypto_secretbox_MACBYTES;
+	size_t total_len = SALT_SIZE + NONCE_SIZE + ciphertext_len;
 
-	guchar *ciphertext = malloc(ciphertext_len);
+	guchar *output = malloc(total_len);
 
-	if (crypto_secretbox_easy(ciphertext, plaintext, plaintext_len, nonce, key) != 0) {
-		die("Test Error");
+	if (crypto_secretbox_easy(output + SALT_SIZE + NONCE_SIZE, plaintext, plaintext_len, nonce, key) != 0) {
+		die("Encryption failed");
 	}
+
+	memcpy(output, salt, SALT_SIZE);
+	memcpy(output + SALT_SIZE, nonce, NONCE_SIZE);
 
 	//TODO sodium_memzero()
 
-	return ciphertext;
+	*out_len = total_len;
+	return output;
 }
 
 gint file_open_real(GtkWidget *view, FileInfo *fi)
@@ -161,6 +166,34 @@ gint file_open_real(GtkWidget *view, FileInfo *fi)
 		contents = g_strdup("");
 	}
 
+	guchar salt[SALT_SIZE];
+	guchar nonce[NONCE_SIZE];
+
+	gchar *r_content = contents;
+
+	memcpy(salt, r_content, SALT_SIZE);
+	memcpy(nonce, r_content + SALT_SIZE, NONCE_SIZE);
+
+	// temp
+	gchar *password = "password";
+
+	guchar key[KEY_SIZE];
+	if (crypto_pwhash(key, sizeof key, password, strlen(password), salt,
+					  crypto_pwhash_OPSLIMIT_INTERACTIVE,
+					  crypto_pwhash_MEMLIMIT_INTERACTIVE,
+					  crypto_pwhash_ALG_DEFAULT) != 0) {
+		die("Password hashing failed");
+	}
+
+	guchar *ciphertext = (guchar *)r_content + SALT_SIZE + NONCE_SIZE;
+	gsize ciphertext_len = length - SALT_SIZE - NONCE_SIZE;
+
+	guchar *decrypted = g_malloc(ciphertext_len - crypto_secretbox_MACBYTES);
+
+	if (crypto_secretbox_open_easy(decrypted, ciphertext, ciphertext_len, nonce, key) != 0) {
+		die("Decryption failed: wrong password or corrupted file");
+	}
+
 	fi->lineend = detect_line_ending(contents);
 	if (fi->lineend != LF)
 		convert_line_ending_to_lf(contents);
@@ -180,7 +213,7 @@ gint file_open_real(GtkWidget *view, FileInfo *fi)
 				g_error_free(err);
 				err = NULL;
 			}
-			str = g_convert(contents, -1, "UTF-8", charset, NULL, NULL, &err);
+			str = g_convert((gchar *)decrypted, -1, "UTF-8", charset, NULL, NULL, &err);
 		} while (err);
 	else
 		str = g_strdup("");
@@ -192,6 +225,8 @@ gint file_open_real(GtkWidget *view, FileInfo *fi)
 		if (fi->charset_flag)
 			fi->charset_flag = FALSE;
 	}
+
+	//g_free(decrypted);
 
 //	undo_disconnect_signal(textbuffer);
 //	undo_block_signal(buffer);
@@ -254,7 +289,8 @@ gint file_save_real(GtkWidget *view, FileInfo *fi)
 		return -1;
 	}
 
-	cstr_encrypted = encrypt_data((unsigned char *)cstr);
+	size_t ciphertext_len;
+	cstr_encrypted = encrypt_data((unsigned char *)cstr, &ciphertext_len);
 
 	fp = fopen(fi->filename, "w");
 	if (!fp) {
@@ -262,7 +298,7 @@ gint file_save_real(GtkWidget *view, FileInfo *fi)
 			GTK_MESSAGE_ERROR, _("Can't open file to write"));
 		return -1;
 	}
-	if (fwrite(cstr_encrypted, 1, wbytes, fp) != wbytes) {
+	if (fwrite(cstr_encrypted, 1, ciphertext_len, fp) != ciphertext_len) {
 		run_dialog_message(gtk_widget_get_toplevel(view),
 			GTK_MESSAGE_ERROR, _("Can't write file"));
 		fclose(fp);

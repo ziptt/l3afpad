@@ -145,12 +145,15 @@ guchar *encrypt_data(guchar *plaintext, size_t *out_len) {
 	guchar nonce[NONCE_SIZE];
 	guchar key[KEY_SIZE];
 
+	GtkWidget *window;
+
 	randombytes_buf(salt, sizeof salt);
 	randombytes_buf(nonce, sizeof nonce);
 
 	// temp
 	//gchar *password = "password";
 
+	window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	open_input_window(window);
 
 	if (crypto_pwhash(key, sizeof key, password, strlen(password), salt,

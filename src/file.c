@@ -106,7 +106,7 @@ gchar *parse_file_uri(gchar *uri)
 	return filename;
 }
 
-guchar *encrypt_data(guchar *plaintext, size_t *out_len) {
+guchar *encrypt_data(GtkWidget *window, guchar *plaintext, size_t *out_len) {
 	guchar salt[SALT_SIZE];
 	guchar nonce[NONCE_SIZE];
 	guchar key[KEY_SIZE];
@@ -115,7 +115,9 @@ guchar *encrypt_data(guchar *plaintext, size_t *out_len) {
 	randombytes_buf(nonce, sizeof nonce);
 
 	// temp
-	gchar *password = "password";
+	//gchar *password = "password";
+
+	open_input_window(window);
 
 	if (crypto_pwhash(key, sizeof key, password, strlen(password), salt,
 		crypto_pwhash_OPSLIMIT_INTERACTIVE,

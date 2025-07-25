@@ -106,6 +106,7 @@ gchar *parse_file_uri(gchar *uri)
 	return filename;
 }
 
+/*
 guchar *encrypt_data(guchar *plaintext, size_t *out_len) {
 	guchar salt[SALT_SIZE];
 	guchar nonce[NONCE_SIZE];
@@ -142,6 +143,7 @@ guchar *encrypt_data(guchar *plaintext, size_t *out_len) {
 	*out_len = total_len;
 	return output;
 }
+*/
 
 gint file_open_real(GtkWidget *view, FileInfo *fi)
 {
@@ -255,6 +257,10 @@ gint file_save_real(GtkWidget *view, FileInfo *fi)
 	gsize rbytes, wbytes;
 	GError *err = NULL;
 
+	guchar salt[SALT_SIZE];
+	guchar nonce[NONCE_SIZE];
+	guchar key[KEY_SIZE];
+
 	GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(view));
 
 	gtk_text_buffer_get_start_iter(buffer, &start);
@@ -287,8 +293,38 @@ gint file_save_real(GtkWidget *view, FileInfo *fi)
 		return -1;
 	}
 
-	size_t ciphertext_len;
-	cstr_encrypted = encrypt_data((unsigned char *)cstr, &ciphertext_len);
+	//size_t ciphertext_len;
+	//cstr_encrypted = encrypt_data((unsigned char *)cstr, &ciphertext_len);
+
+	randombytes_buf(salt, sizeof salt);
+	randombytes_buf(nonce, sizeof nonce);
+
+	// temp
+	gchar *password = "password";
+
+	if (crypto_pwhash(key, sizeof key, password, strlen(password), salt,
+		crypto_pwhash_OPSLIMIT_INTERACTIVE,
+		crypto_pwhash_MEMLIMIT_INTERACTIVE,
+		crypto_pwhash_ALG_DEFAULT) != 0) {
+			die("Test Error");
+	}
+
+	size_t plaintext_len = strlen((char *)cstr);
+	size_t ciphertext_len = plaintext_len + crypto_secretbox_MACBYTES;
+	size_t total_len = SALT_SIZE + NONCE_SIZE + ciphertext_len;
+
+	guchar *output = malloc(total_len);
+
+	if (crypto_secretbox_easy(output + SALT_SIZE + NONCE_SIZE, cstr, plaintext_len, nonce, key) != 0) {
+		die("Encryption failed");
+	}
+
+	memcpy(output, salt, SALT_SIZE);
+	memcpy(output + SALT_SIZE, nonce, NONCE_SIZE);
+
+	//TODO sodium_memzero()
+
+	cstr_encrypted = output;
 
 	fp = fopen(fi->filename, "w");
 	if (!fp) {

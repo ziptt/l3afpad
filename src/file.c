@@ -32,40 +32,6 @@ void die(const char *msg) {
 	exit(1);
 }
 
-void open_input_window(GtkWidget *main_window) {
-	GtkWidget *dialog_window;
-	GtkWidget *vbox;
-	GtkWidget *label;
-	GtkWidget *entry;
-	GtkWidget *ok_button;
-
-	dialog_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-	gtk_window_set_title(GTK_WINDOW(dialog_window), "Input Dialog");
-	gtk_window_set_transient_for(GTK_WINDOW(dialog_window), GTK_WINDOW(main_window));
-	gtk_window_set_modal(GTK_WINDOW(dialog_window), TRUE);
-	gtk_window_set_default_size(GTK_WINDOW(dialog_window), 250, 100);
-	gtk_container_set_border_width(GTK_CONTAINER(dialog_window), 10);
-
-	vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 8);
-	gtk_container_add(GTK_CONTAINER(dialog_window), vbox);
-
-	label = gtk_label_new("Please enter some text:");
-	gtk_box_pack_start(GTK_BOX(vbox), label, FALSE, FALSE, 0);
-
-	entry = gtk_entry_new();
-	gtk_box_pack_start(GTK_BOX(vbox), entry, FALSE, FALSE, 0);
-
-	ok_button = gtk_button_new_with_label("OK");
-	gtk_box_pack_start(GTK_BOX(vbox), ok_button, FALSE, FALSE, 0);
-
-	// Pass both entry and dialog window as user_data
-	GtkWidget **widgets = g_malloc(sizeof(GtkWidget*) * 2);
-	widgets[0] = entry;
-	widgets[1] = dialog_window;
-
-	gtk_widget_show_all(dialog_window);
-}
-
 gboolean check_file_writable(gchar *filename)
 {
 	FILE *fp;

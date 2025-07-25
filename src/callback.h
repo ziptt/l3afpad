@@ -47,5 +47,6 @@ void on_option_line_numbers(void);
 void on_option_always_on_top(void);
 void on_option_auto_indent(void);
 void on_help_about(void);
+void open_input_window(GtkWidget *main_window);
 
 #endif /* _CALLBACK_H */

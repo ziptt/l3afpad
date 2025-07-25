@@ -357,6 +357,20 @@ void on_help_about(void)
 		NULL);
 }
 
+void on_ok_clicked(GtkButton *button, gpointer user_data) {
+	GtkWidget **widgets = (GtkWidget **)user_data;
+	GtkEntry *entry = GTK_ENTRY(widgets[0]);
+	GtkWidget *dialog_window = widgets[1];
+
+	const gchar *textqwe = gtk_entry_get_text(entry);
+
+	//process_input_in_main(text);
+
+	gtk_widget_destroy(dialog_window);
+
+	g_free(widgets);
+}
+
 void open_input_window(GtkWidget *main_window) {
 	GtkWidget *dialog_window;
 	GtkWidget *vbox;

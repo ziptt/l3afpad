@@ -119,6 +119,8 @@ guchar *encrypt_data(guchar *plaintext, size_t *out_len) {
 	// temp
 	//gchar *password = "password";
 
+	gchar *password = textqwe;
+
 	window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	open_input_window(window);
 

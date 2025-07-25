@@ -362,7 +362,7 @@ void on_ok_clicked(GtkButton *button, gpointer user_data) {
 	GtkEntry *entry = GTK_ENTRY(widgets[0]);
 	GtkWidget *dialog_window = widgets[1];
 
-	const gchar *textqwe = gtk_entry_get_text(entry);
+	//const gchar *text = gtk_entry_get_text(entry);
 
 	//process_input_in_main(text);
 

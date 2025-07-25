@@ -388,5 +388,7 @@ void open_input_window(GtkWidget *main_window) {
 	widgets[0] = entry;
 	widgets[1] = dialog_window;
 
+	g_signal_connect(ok_button, "clicked", G_CALLBACK(on_ok_clicked), widgets);
+
 	gtk_widget_show_all(dialog_window);
 }

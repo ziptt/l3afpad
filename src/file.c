@@ -188,7 +188,8 @@ gint file_open_real(GtkWidget *view, FileInfo *fi)
 	guchar *ciphertext = (guchar *)contents + SALT_SIZE + NONCE_SIZE;
 	gsize ciphertext_len = length - SALT_SIZE - NONCE_SIZE;
 
-	guchar *decrypted = g_malloc(ciphertext_len - crypto_secretbox_MACBYTES);
+	guchar *decrypted = malloc(ciphertext_len - crypto_secretbox_MACBYTES);
+	if (!decrypted) die("Cannot allocate memory");
 
 	if (crypto_secretbox_open_easy(decrypted, ciphertext, ciphertext_len, nonce, key) != 0) {
 		die("Decryption failed: wrong password or corrupted file");

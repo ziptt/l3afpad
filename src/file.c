@@ -309,7 +309,7 @@ gint file_save_real(GtkWidget *view, FileInfo *fi)
 			die("Test Error");
 	}
 
-	size_t plaintext_len = strlen((char *)cstr);
+	size_t plaintext_len = strlen(cstr);
 	size_t ciphertext_len = plaintext_len + crypto_secretbox_MACBYTES;
 	size_t total_len = SALT_SIZE + NONCE_SIZE + ciphertext_len;
 
@@ -332,7 +332,7 @@ gint file_save_real(GtkWidget *view, FileInfo *fi)
 			GTK_MESSAGE_ERROR, _("Can't open file to write"));
 		return -1;
 	}
-	if (fwrite(cstr_encrypted, 1, ciphertext_len, fp) != ciphertext_len) {
+	if (fwrite(cstr_encrypted, 1, total_len, fp) != total_len) {
 		run_dialog_message(gtk_widget_get_toplevel(view),
 			GTK_MESSAGE_ERROR, _("Can't write file"));
 		fclose(fp);

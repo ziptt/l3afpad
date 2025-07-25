@@ -252,8 +252,8 @@ gint file_save_real(GtkWidget *view, FileInfo *fi)
 {
 	FILE *fp;
 	GtkTextIter start, end;
-	gchar *str;
-	guchar *cstr_encrypted, *cstr;
+	gchar *str, *cstr;
+	guchar *cstr_encrypted;
 	gsize rbytes, wbytes;
 	GError *err = NULL;
 
@@ -315,7 +315,7 @@ gint file_save_real(GtkWidget *view, FileInfo *fi)
 
 	guchar *output = malloc(total_len);
 
-	if (crypto_secretbox_easy(output + SALT_SIZE + NONCE_SIZE, cstr, plaintext_len, nonce, key) != 0) {
+	if (crypto_secretbox_easy(output + SALT_SIZE + NONCE_SIZE, (guchar *)cstr, plaintext_len, nonce, key) != 0) {
 		die("Encryption failed");
 	}
 

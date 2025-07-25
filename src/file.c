@@ -252,8 +252,8 @@ gint file_save_real(GtkWidget *view, FileInfo *fi)
 {
 	FILE *fp;
 	GtkTextIter start, end;
-	gchar *str, *cstr;
-	guchar *cstr_encrypted;
+	gchar *str;
+	guchar *cstr_encrypted, *cstr;
 	gsize rbytes, wbytes;
 	GError *err = NULL;
 

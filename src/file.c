@@ -136,7 +136,10 @@ gint file_open_real(GtkWidget *view, FileInfo *fi)
 	memcpy(nonce, contents + SALT_SIZE, NONCE_SIZE);
 
 	// temp
-	gchar *password = "password";
+	//gchar *password = "password";
+
+	GtkWidget *window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+	gchar *password = get_user_input(window);
 
 	guchar key[KEY_SIZE];
 	if (crypto_pwhash(key, sizeof key, password, strlen(password), salt,
@@ -255,18 +258,13 @@ gint file_save_real(GtkWidget *view, FileInfo *fi)
 		return -1;
 	}
 
-	//size_t ciphertext_len;
-	//cstr_encrypted = encrypt_data((unsigned char *)cstr, &ciphertext_len);
-
-	randombytes_buf(salt, sizeof salt);
-	randombytes_buf(nonce, sizeof nonce);
-
-	// temp
 	//gchar *password = "password";
 
 	GtkWidget *window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-
 	gchar *password = get_user_input(window);
+
+	randombytes_buf(salt, sizeof salt);
+	randombytes_buf(nonce, sizeof nonce);
 
 	if (crypto_pwhash(key, sizeof key, password, strlen(password), salt,
 		crypto_pwhash_OPSLIMIT_INTERACTIVE,

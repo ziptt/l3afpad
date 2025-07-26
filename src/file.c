@@ -140,27 +140,27 @@ gint file_open_real(GtkWidget *view, FileInfo *fi)
 	GtkWidget *window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	gchar *password = get_user_input(window);
 
-	if (password) {
-		guchar key[KEY_SIZE];
-		if (crypto_pwhash(key, sizeof key, password, strlen(password), salt,
-						crypto_pwhash_OPSLIMIT_INTERACTIVE,
-						crypto_pwhash_MEMLIMIT_INTERACTIVE,
-						crypto_pwhash_ALG_DEFAULT) != 0) {
-			die("Password hashing failed");
-		}
+	if (password == "") goto skipdec;
 
-		guchar *ciphertext = (guchar *)contents + SALT_SIZE + NONCE_SIZE;
-		gsize ciphertext_len = length - SALT_SIZE - NONCE_SIZE;
-
-		guchar *decrypted = malloc(ciphertext_len - crypto_secretbox_MACBYTES);
-		if (!decrypted) die("Cannot allocate memory");
-
-		if (crypto_secretbox_open_easy(decrypted, ciphertext, ciphertext_len, nonce, key) != 0) {
-			die("Decryption failed: wrong password or corrupted file");
-		}
+	guchar key[KEY_SIZE];
+	if (crypto_pwhash(key, sizeof key, password, strlen(password), salt,
+					crypto_pwhash_OPSLIMIT_INTERACTIVE,
+					crypto_pwhash_MEMLIMIT_INTERACTIVE,
+					crypto_pwhash_ALG_DEFAULT) != 0) {
+		die("Password hashing failed");
 	}
 
-	gchar *decrypted = "";
+	guchar *ciphertext = (guchar *)contents + SALT_SIZE + NONCE_SIZE;
+	gsize ciphertext_len = length - SALT_SIZE - NONCE_SIZE;
+
+	guchar *decrypted = malloc(ciphertext_len - crypto_secretbox_MACBYTES);
+	if (!decrypted) die("Cannot allocate memory");
+
+	if (crypto_secretbox_open_easy(decrypted, ciphertext, ciphertext_len, nonce, key) != 0) {
+		die("Decryption failed: wrong password or corrupted file");
+	}
+
+	skipdec:
 
 	fi->lineend = detect_line_ending(decrypted);
 	if (fi->lineend != LF)

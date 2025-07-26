@@ -357,10 +357,10 @@ void on_help_about(void)
 		NULL);
 }
 
-gchar* get_user_input(GtkWidget *parent) {
+gchar* get_user_input(void) {
 	GtkWidget *dialog = gtk_dialog_new_with_buttons(
 		"Input Dialog",
-		parent,
+		NULL,
 		GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
 		"_OK", GTK_RESPONSE_OK,
 		"_Cancel", GTK_RESPONSE_CANCEL,

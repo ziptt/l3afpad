@@ -137,8 +137,9 @@ gint file_open_real(GtkWidget *view, FileInfo *fi)
 
 	//gchar *password = "password";
 
-	GtkWidget *window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-	gchar *password = get_user_input(window);
+	//GtkWidget *window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+
+	gchar *password = get_user_input();
 
 	if (password == NULL || strcmp(password, "") == 0) goto skipdec;
 

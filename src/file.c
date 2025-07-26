@@ -286,7 +286,7 @@ gint file_save_real(GtkWidget *view, FileInfo *fi)
 	// temp
 	//gchar *password = "password";
 
-	window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+	GtkWidget *window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	open_input_window(window);
 
 	gchar *password = process_input_in_main();

@@ -357,38 +357,53 @@ void on_help_about(void)
 		NULL);
 }
 
-void open_input_window(GtkWidget *main_window) {
-	GtkWidget *dialog_window;
-	GtkWidget *vbox;
-	GtkWidget *label;
-	GtkWidget *entry;
-	GtkWidget *ok_button;
+gchar* get_user_input(GtkWindow *parent) {
+	GtkWidget *dialog = gtk_dialog_new_with_buttons(
+		"Input Dialog",
+		parent,
+		GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+		"_OK", GTK_RESPONSE_OK,
+		"_Cancel", GTK_RESPONSE_CANCEL,
+		NULL);
 
-	dialog_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-	gtk_window_set_title(GTK_WINDOW(dialog_window), "Input Dialog");
-	gtk_window_set_transient_for(GTK_WINDOW(dialog_window), GTK_WINDOW(main_window));
-	gtk_window_set_modal(GTK_WINDOW(dialog_window), TRUE);
-	gtk_window_set_default_size(GTK_WINDOW(dialog_window), 250, 100);
-	gtk_container_set_border_width(GTK_CONTAINER(dialog_window), 10);
+	GtkWidget *content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
 
-	vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 8);
-	gtk_container_add(GTK_CONTAINER(dialog_window), vbox);
+	GtkWidget *entry = gtk_entry_new();
+	gtk_box_pack_start(GTK_BOX(content_area), gtk_label_new("Enter text:"), FALSE, FALSE, 5);
+	gtk_box_pack_start(GTK_BOX(content_area), entry, FALSE, FALSE, 5);
 
-	label = gtk_label_new("Please enter some text:");
-	gtk_box_pack_start(GTK_BOX(vbox), label, FALSE, FALSE, 0);
+	gtk_widget_show_all(dialog);
 
-	entry = gtk_entry_new();
-	gtk_box_pack_start(GTK_BOX(vbox), entry, FALSE, FALSE, 0);
+	// Block and wait for user response
+	gint response = gtk_dialog_run(GTK_DIALOG(dialog));
+	gchar *text = NULL;
 
-	ok_button = gtk_button_new_with_label("OK");
-	gtk_box_pack_start(GTK_BOX(vbox), ok_button, FALSE, FALSE, 0);
+	if (response == GTK_RESPONSE_OK) {
+		const gchar *input = gtk_entry_get_text(GTK_ENTRY(entry));
+		text = g_strdup(input); // duplicate so we can return it after destroying dialog
+	}
 
-	// Pass both entry and dialog window as user_data
-	GtkWidget **widgets = g_malloc(sizeof(GtkWidget*) * 2);
-	widgets[0] = entry;
-	widgets[1] = dialog_window;
-
-	g_signal_connect(ok_button, "clicked", G_CALLBACK(on_ok_clicked), widgets);
-
-	gtk_widget_show_all(dialog_window);
+	gtk_widget_destroy(dialog);
+	return text;
 }
+
+/*
+void on_button_clicked(GtkButton *button, gpointer user_data) {
+	GtkWindow *parent = GTK_WINDOW(user_data);
+
+	gchar *user_text = get_user_input(parent);
+	if (user_text) {
+		// "Return" from dialog, now we can process it here
+		g_print("User entered: %s\n", user_text);
+
+		// Example of processing
+		gchar *upper = g_ascii_strup(user_text, -1);
+		g_print("Uppercase version: %s\n", upper);
+
+		g_free(upper);
+		g_free(user_text);
+	} else {
+		g_print("User canceled input.\n");
+	}
+}
+*/

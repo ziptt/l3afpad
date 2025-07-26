@@ -357,7 +357,7 @@ void on_help_about(void)
 		NULL);
 }
 
-gchar* get_user_input(GtkWindow *parent) {
+gchar* get_user_input(GtkWidget *parent) {
 	GtkWidget *dialog = gtk_dialog_new_with_buttons(
 		"Input Dialog",
 		parent,

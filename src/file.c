@@ -106,7 +106,11 @@ gchar *parse_file_uri(gchar *uri)
 	return filename;
 }
 
-gchar on_ok_clicked(GtkButton *button, gpointer user_data) {
+gchar process_input_in_main(const gchar *text) {
+	return text;
+}
+
+void on_ok_clicked(GtkButton *button, gpointer user_data) {
 	GtkWidget **widgets = (GtkWidget **)user_data;
 	GtkEntry *entry = GTK_ENTRY(widgets[0]);
 	GtkWidget *dialog_window = widgets[1];
@@ -114,7 +118,7 @@ gchar on_ok_clicked(GtkButton *button, gpointer user_data) {
 	const gchar *text = gtk_entry_get_text(entry);
 
 	// Process input in main window
-	//process_input_in_main(text);
+	process_input_in_main(text);
 
 	// Destroy the input window
 	gtk_widget_destroy(dialog_window);
@@ -282,10 +286,10 @@ gint file_save_real(GtkWidget *view, FileInfo *fi)
 	// temp
 	//gchar *password = "password";
 
-	gchar *password = on_ok_clicked();
-
 	window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	open_input_window(window);
+
+	gchar *password = process_input_in_main();
 
 	if (crypto_pwhash(key, sizeof key, password, strlen(password), salt,
 		crypto_pwhash_OPSLIMIT_INTERACTIVE,

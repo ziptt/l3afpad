@@ -106,45 +106,6 @@ gchar *parse_file_uri(gchar *uri)
 	return filename;
 }
 
-/*
-guchar *encrypt_data(guchar *plaintext, size_t *out_len) {
-	guchar salt[SALT_SIZE];
-	guchar nonce[NONCE_SIZE];
-	guchar key[KEY_SIZE];
-
-	randombytes_buf(salt, sizeof salt);
-	randombytes_buf(nonce, sizeof nonce);
-
-	// temp
-	gchar *password = "password";
-
-	if (crypto_pwhash(key, sizeof key, password, strlen(password), salt,
-		crypto_pwhash_OPSLIMIT_INTERACTIVE,
-		crypto_pwhash_MEMLIMIT_INTERACTIVE,
-		crypto_pwhash_ALG_DEFAULT) != 0) {
-			die("Test Error");
-	}
-
-	size_t plaintext_len = strlen((char *)plaintext);
-	size_t ciphertext_len = plaintext_len + crypto_secretbox_MACBYTES;
-	size_t total_len = SALT_SIZE + NONCE_SIZE + ciphertext_len;
-
-	guchar *output = malloc(total_len);
-
-	if (crypto_secretbox_easy(output + SALT_SIZE + NONCE_SIZE, plaintext, plaintext_len, nonce, key) != 0) {
-		die("Encryption failed");
-	}
-
-	memcpy(output, salt, SALT_SIZE);
-	memcpy(output + SALT_SIZE, nonce, NONCE_SIZE);
-
-	//TODO sodium_memzero()
-
-	*out_len = total_len;
-	return output;
-}
-*/
-
 gint file_open_real(GtkWidget *view, FileInfo *fi)
 {
 	gchar *contents;

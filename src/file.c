@@ -135,7 +135,6 @@ gint file_open_real(GtkWidget *view, FileInfo *fi)
 	memcpy(salt, contents, SALT_SIZE);
 	memcpy(nonce, contents + SALT_SIZE, NONCE_SIZE);
 
-	// temp
 	//gchar *password = "password";
 
 	GtkWidget *window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
@@ -159,14 +158,14 @@ gint file_open_real(GtkWidget *view, FileInfo *fi)
 		die("Decryption failed: wrong password or corrupted file");
 	}
 
-	fi->lineend = detect_line_ending(contents);
+	fi->lineend = detect_line_ending(decrypted);
 	if (fi->lineend != LF)
-		convert_line_ending_to_lf(contents);
+		convert_line_ending_to_lf(decrypted);
 
 	if (fi->charset)
 		charset = fi->charset;
 	else {
-		charset = detect_charset(contents);
+		charset = detect_charset(decrypted);
 		if (charset == NULL)
 			charset = get_default_charset();
 	}
@@ -191,7 +190,7 @@ gint file_open_real(GtkWidget *view, FileInfo *fi)
 			fi->charset_flag = FALSE;
 	}
 
-	//g_free(decrypted);
+	g_free(decrypted);
 
 //	undo_disconnect_signal(textbuffer);
 //	undo_block_signal(buffer);

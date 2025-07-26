@@ -387,6 +387,7 @@ gchar* get_user_input(GtkWidget *parent) {
 	return text;
 }
 
+//delet
 /*
 void on_button_clicked(GtkButton *button, gpointer user_data) {
 	GtkWindow *parent = GTK_WINDOW(user_data);

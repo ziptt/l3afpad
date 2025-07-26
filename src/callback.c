@@ -386,25 +386,3 @@ gchar* get_user_input(GtkWidget *parent) {
 	gtk_widget_destroy(dialog);
 	return text;
 }
-
-//delet
-/*
-void on_button_clicked(GtkButton *button, gpointer user_data) {
-	GtkWindow *parent = GTK_WINDOW(user_data);
-
-	gchar *user_text = get_user_input(parent);
-	if (user_text) {
-		// "Return" from dialog, now we can process it here
-		g_print("User entered: %s\n", user_text);
-
-		// Example of processing
-		gchar *upper = g_ascii_strup(user_text, -1);
-		g_print("Uppercase version: %s\n", upper);
-
-		g_free(upper);
-		g_free(user_text);
-	} else {
-		g_print("User canceled input.\n");
-	}
-}
-*/

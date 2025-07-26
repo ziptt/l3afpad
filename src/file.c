@@ -106,6 +106,24 @@ gchar *parse_file_uri(gchar *uri)
 	return filename;
 }
 
+gchar on_ok_clicked(GtkButton *button, gpointer user_data) {
+	GtkWidget **widgets = (GtkWidget **)user_data;
+	GtkEntry *entry = GTK_ENTRY(widgets[0]);
+	GtkWidget *dialog_window = widgets[1];
+
+	const gchar *text = gtk_entry_get_text(entry);
+
+	// Process input in main window
+	//process_input_in_main(text);
+
+	// Destroy the input window
+	gtk_widget_destroy(dialog_window);
+
+	g_free(widgets);  // Free allocated memory for widget array
+
+	return text;
+}
+
 gint file_open_real(GtkWidget *view, FileInfo *fi)
 {
 	gchar *contents;
@@ -262,7 +280,12 @@ gint file_save_real(GtkWidget *view, FileInfo *fi)
 	randombytes_buf(nonce, sizeof nonce);
 
 	// temp
-	gchar *password = "password";
+	//gchar *password = "password";
+
+	gchar *password = on_ok_clicked();
+
+	window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+	open_input_window(window);
 
 	if (crypto_pwhash(key, sizeof key, password, strlen(password), salt,
 		crypto_pwhash_OPSLIMIT_INTERACTIVE,

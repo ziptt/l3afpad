@@ -140,23 +140,27 @@ gint file_open_real(GtkWidget *view, FileInfo *fi)
 	GtkWidget *window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	gchar *password = get_user_input(window);
 
-	guchar key[KEY_SIZE];
-	if (crypto_pwhash(key, sizeof key, password, strlen(password), salt,
-					  crypto_pwhash_OPSLIMIT_INTERACTIVE,
-					  crypto_pwhash_MEMLIMIT_INTERACTIVE,
-					  crypto_pwhash_ALG_DEFAULT) != 0) {
-		die("Password hashing failed");
+	if (password) {
+		guchar key[KEY_SIZE];
+		if (crypto_pwhash(key, sizeof key, password, strlen(password), salt,
+						crypto_pwhash_OPSLIMIT_INTERACTIVE,
+						crypto_pwhash_MEMLIMIT_INTERACTIVE,
+						crypto_pwhash_ALG_DEFAULT) != 0) {
+			die("Password hashing failed");
+		}
+
+		guchar *ciphertext = (guchar *)contents + SALT_SIZE + NONCE_SIZE;
+		gsize ciphertext_len = length - SALT_SIZE - NONCE_SIZE;
+
+		guchar *decrypted = malloc(ciphertext_len - crypto_secretbox_MACBYTES);
+		if (!decrypted) die("Cannot allocate memory");
+
+		if (crypto_secretbox_open_easy(decrypted, ciphertext, ciphertext_len, nonce, key) != 0) {
+			die("Decryption failed: wrong password or corrupted file");
+		}
 	}
 
-	guchar *ciphertext = (guchar *)contents + SALT_SIZE + NONCE_SIZE;
-	gsize ciphertext_len = length - SALT_SIZE - NONCE_SIZE;
-
-	guchar *decrypted = malloc(ciphertext_len - crypto_secretbox_MACBYTES);
-	if (!decrypted) die("Cannot allocate memory");
-
-	if (crypto_secretbox_open_easy(decrypted, ciphertext, ciphertext_len, nonce, key) != 0) {
-		die("Decryption failed: wrong password or corrupted file");
-	}
+	gchar *decrypted = "";
 
 	fi->lineend = detect_line_ending(decrypted);
 	if (fi->lineend != LF)
@@ -190,7 +194,7 @@ gint file_open_real(GtkWidget *view, FileInfo *fi)
 			fi->charset_flag = FALSE;
 	}
 
-	g_free(decrypted);
+	//g_free(decrypted);
 
 //	undo_disconnect_signal(textbuffer);
 //	undo_block_signal(buffer);
@@ -262,50 +266,52 @@ gint file_save_real(GtkWidget *view, FileInfo *fi)
 	GtkWidget *window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	gchar *password = get_user_input(window);
 
-	randombytes_buf(salt, sizeof salt);
-	randombytes_buf(nonce, sizeof nonce);
+	if (password) {
+		randombytes_buf(salt, sizeof salt);
+		randombytes_buf(nonce, sizeof nonce);
 
-	if (crypto_pwhash(key, sizeof key, password, strlen(password), salt,
-		crypto_pwhash_OPSLIMIT_INTERACTIVE,
-		crypto_pwhash_MEMLIMIT_INTERACTIVE,
-		crypto_pwhash_ALG_DEFAULT) != 0) {
-			die("Test Error");
-	}
+		if (crypto_pwhash(key, sizeof key, password, strlen(password), salt,
+			crypto_pwhash_OPSLIMIT_INTERACTIVE,
+			crypto_pwhash_MEMLIMIT_INTERACTIVE,
+			crypto_pwhash_ALG_DEFAULT) != 0) {
+				die("Test Error");
+		}
 
-	size_t plaintext_len = strlen(cstr);
-	size_t ciphertext_len = plaintext_len + crypto_secretbox_MACBYTES;
-	size_t total_len = SALT_SIZE + NONCE_SIZE + ciphertext_len;
+		size_t plaintext_len = strlen(cstr);
+		size_t ciphertext_len = plaintext_len + crypto_secretbox_MACBYTES;
+		size_t total_len = SALT_SIZE + NONCE_SIZE + ciphertext_len;
 
-	guchar *output = malloc(total_len);
+		guchar *output = malloc(total_len);
 
-	if (crypto_secretbox_easy(output + SALT_SIZE + NONCE_SIZE, (guchar *)cstr, plaintext_len, nonce, key) != 0) {
-		die("Encryption failed");
-	}
+		if (crypto_secretbox_easy(output + SALT_SIZE + NONCE_SIZE, (guchar *)cstr, plaintext_len, nonce, key) != 0) {
+			die("Encryption failed");
+		}
 
-	memcpy(output, salt, SALT_SIZE);
-	memcpy(output + SALT_SIZE, nonce, NONCE_SIZE);
+		memcpy(output, salt, SALT_SIZE);
+		memcpy(output + SALT_SIZE, nonce, NONCE_SIZE);
 
-	//TODO sodium_memzero()
+		//TODO sodium_memzero()
 
-	cstr_encrypted = output;
+		cstr_encrypted = output;
 
-	fp = fopen(fi->filename, "w");
-	if (!fp) {
-		run_dialog_message(gtk_widget_get_toplevel(view),
-			GTK_MESSAGE_ERROR, _("Can't open file to write"));
-		return -1;
-	}
-	if (fwrite(cstr_encrypted, 1, total_len, fp) != total_len) {
-		run_dialog_message(gtk_widget_get_toplevel(view),
-			GTK_MESSAGE_ERROR, _("Can't write file"));
+		fp = fopen(fi->filename, "w");
+		if (!fp) {
+			run_dialog_message(gtk_widget_get_toplevel(view),
+				GTK_MESSAGE_ERROR, _("Can't open file to write"));
+			return -1;
+		}
+		if (fwrite(cstr_encrypted, 1, total_len, fp) != total_len) {
+			run_dialog_message(gtk_widget_get_toplevel(view),
+				GTK_MESSAGE_ERROR, _("Can't write file"));
+			fclose(fp);
+			return -1;
+		}
+
+		gtk_text_buffer_set_modified(buffer, FALSE);
 		fclose(fp);
-		return -1;
+		g_free(cstr);
+		g_free(cstr_encrypted);
 	}
-
-	gtk_text_buffer_set_modified(buffer, FALSE);
-	fclose(fp);
-	g_free(cstr);
-	g_free(cstr_encrypted);
 
 	return 0;
 }

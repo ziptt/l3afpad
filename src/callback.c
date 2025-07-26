@@ -382,9 +382,12 @@ gchar* get_user_input(GtkWidget *parent) {
 		const gchar *input = gtk_entry_get_text(GTK_ENTRY(entry));
 		text = g_strdup(input); // duplicate so we can return it after destroying dialog
 	}
+
+/*
 	else {
 		text = "";
 	}
+*/
 
 	gtk_widget_destroy(dialog);
 	return text;

@@ -140,8 +140,6 @@ gint file_open_real(GtkWidget *view, FileInfo *fi)
 	GtkWidget *window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	gchar *password = get_user_input(window);
 
-	//if (password == "") goto skipdec;
-
 	if (password == NULL || strcmp(password, "") == 0) goto skipdec;
 
 	guchar key[KEY_SIZE];

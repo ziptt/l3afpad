@@ -383,12 +383,6 @@ gchar* get_user_input(GtkWidget *parent) {
 		text = g_strdup(input); // duplicate so we can return it after destroying dialog
 	}
 
-/*
-	else {
-		text = "";
-	}
-*/
-
 	gtk_widget_destroy(dialog);
 	return text;
 }

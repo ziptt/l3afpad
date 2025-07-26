@@ -264,8 +264,9 @@ gint file_save_real(GtkWidget *view, FileInfo *fi)
 
 	//gchar *password = "password";
 
-	GtkWidget *window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-	gchar *password = get_user_input(window);
+	//GtkWidget *window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+
+	gchar *password = get_user_input();
 
 	if (password) {
 		randombytes_buf(salt, sizeof salt);
